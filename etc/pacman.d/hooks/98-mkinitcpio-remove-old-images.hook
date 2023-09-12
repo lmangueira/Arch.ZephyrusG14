@@ -1,0 +1,11 @@
+[Trigger]
+Type = Package
+Operation = Upgrade
+Operation = Install
+Target = linux*
+Target = amd-ucode
+
+[Action]
+Description = Remove old EFI kernel images
+When = PostTransaction
+Exec = /efi/EFI/Arch/Scripts/remove_old_images

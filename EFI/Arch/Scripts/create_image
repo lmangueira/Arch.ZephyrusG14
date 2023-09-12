@@ -1,0 +1,63 @@
+#!/bin/bash
+
+set -eu
+
+EFI_FOLDER=/efi/EFI/Arch
+EFI_STUB=/usr/lib/systemd/boot/efi/linuxx64.efi.stub
+
+KERNEL=/boot/vmlinuz-linux
+INITRAMFS_AMD=/boot/amd-ucode.img
+INITRAMFS=/boot/initramfs-linux.img
+INITRAMFS_MERGED=${EFI_FOLDER}/ucode-initramfs.img
+
+SPLASH_IMAGE=/usr/share/systemd/bootctl/splash-arch.bmp
+
+UNSIGNED_IMAGE=${EFI_FOLDER}/Arch.Unsigned.efi
+
+echo "==> Create image with amd-ucode and initramfs..."
+cat ${INITRAMFS_AMD} ${INITRAMFS} > ${INITRAMFS_MERGED}
+
+
+####
+## OFFSETS
+####
+
+echo "==> Calculating offsets"
+align="$(/usr/bin/objdump -p /usr/lib/systemd/boot/efi/linuxx64.efi.stub | /usr/bin/awk '{ if ($1 == "SectionAlignment"){print $2} }')"
+align=$((16#$align))
+
+osrel_offs="$(/usr/bin/objdump -h "/usr/lib/systemd/boot/efi/linuxx64.efi.stub" | /usr/bin/awk 'NF==7 {size=strtonum("0x"$3); offset=strtonum("0x"$4)} END {print size + offset}')"
+osrel_offs=$((osrel_offs + "$align" - osrel_offs % "$align"))
+OSREL_OFFSET=$(printf 0x%x $osrel_offs) 
+echo "  -> Calculated offset: [osrel] ${OSREL_OFFSET}"
+
+cmdline_offs=$((osrel_offs + $(stat -Lc%s "/usr/lib/os-release")))
+cmdline_offs=$((cmdline_offs + "$align" - cmdline_offs % "$align"))
+CMDLINE_OFFSET=$(printf 0x%x $cmdline_offs) 
+echo "  -> Calculated offset: [cmdline] ${CMDLINE_OFFSET}"
+
+splash_offs=$((cmdline_offs + $(stat -Lc%s "/proc/cmdline")))
+splash_offs=$((splash_offs + "$align" - splash_offs % "$align"))
+SPLASH_OFFSET=$(printf 0x%x $splash_offs) 
+echo "  -> Calculated offset: [splash] ${SPLASH_OFFSET}"
+
+initrd_offs=$((splash_offs + $(stat -Lc%s "${SPLASH_IMAGE}")))
+initrd_offs=$((initrd_offs + "$align" - initrd_offs % "$align"))
+INITRD_OFFSET=$(printf 0x%x $initrd_offs) 
+echo "  -> Calculated offset: [initrd] ${INITRD_OFFSET}"
+
+linux_offs=$((initrd_offs + $(stat -Lc%s $INITRAMFS_MERGED)))
+linux_offs=$((linux_offs + "$align" - linux_offs % "$align"))
+LINUX_OFFSET=$(printf 0x%x $linux_offs) 
+echo "  -> Calculated offset: [linux] ${LINUX_OFFSET}"
+
+
+echo "==> Creating EFI Image ${UNSIGNED_IMAGE}"
+/usr/bin/objcopy \
+--add-section .osrel="/etc/os-release" --change-section-vma .osrel=${OSREL_OFFSET} \
+--add-section .cmdline="/proc/cmdline" --change-section-vma .cmdline=${CMDLINE_OFFSET} \
+--add-section .splash="${SPLASH_IMAGE}" --change-section-vma .splash=${SPLASH_OFFSET} \
+--add-section .linux="${KERNEL}" --change-section-vma .linux=${LINUX_OFFSET} \
+--add-section .initrd=${INITRAMFS_MERGED} --change-section-vma .initrd=${INITRD_OFFSET} \
+${EFI_STUB} ${UNSIGNED_IMAGE}
+

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -eu
+
+EFI_FOLDER=/efi/EFI/Arch
+DB_FOLDER=${EFI_FOLDER}/Keys/DB
+
+UNSIGNED_IMAGE=${EFI_FOLDER}/Arch.Unsigned.efi
+SIGNED_IMAGE=${EFI_FOLDER}/Arch.efi
+
+echo "==> Signing kernel ${UNSIGNED_IMAGE} to ${SIGNED_IMAGE}"
+/usr/bin/sbsign \
+  --key ${DB_FOLDER}/db.key \
+  --cert ${DB_FOLDER}/db.crt \
+  --output ${SIGNED_IMAGE} ${UNSIGNED_IMAGE}
+

@@ -1,0 +1,1 @@
+efibootmgr --create --disk /dev/nvme0n1p8 --part 1 --loader /EFI/Arch/Arch.efi --label Arch --unicode 'root=PARTUUID=c9b8cf65-8425-db41-b767-ff17dad0baf5 rw quiet splash vga=current loglevel=0 rd.systemd.show_status=auto rd.udev.log_level=0 console=tty2'

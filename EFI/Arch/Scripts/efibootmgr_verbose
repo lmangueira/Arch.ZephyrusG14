@@ -1,0 +1,1 @@
+efibootmgr --create --disk /dev/nvme0n1p8 --part 1 --loader /EFI/Arch/Arch.efi --label 'Arch (Verbose)' --unicode 'root=UUID=aef404d8-c5c0-41f6-ab02-21d3a1478c33 rootflags=subvol=@ rw vga=current'

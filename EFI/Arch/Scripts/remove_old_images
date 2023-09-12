@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -eu
+
+EFI_FOLDER=/efi/EFI/Arch
+BACKUP_FOLDER=/boot/efi_backup/
+
+NUMBER_TO_KEEP=5
+
+echo "==> Getting total folders in $BACKUP_FOLDER"
+total_folders=$(ls $BACKUP_FOLDER | wc -l)
+
+echo "  -> There are $total_folders folder(s) in $EFI_FOLDER. We must keep $NUMBER_TO_KEEP folder(s)"
+
+total_to_delete=$(($total_folders-$NUMBER_TO_KEEP))
+to_delete=$(ls $BACKUP_FOLDER | head -n $total_to_delete)
+
+if [[ $total_to_delete -lt 1 ]]
+then
+    echo "  -> Nothing to delete"
+else
+    echo "  -> We must delete ${to_delete} folder(s)"
+
+    echo "==> Deleting old backups..."
+
+    for f in $to_delete
+    do
+        echo "  -> Deleting $f"
+        rm -r $BACKUP_FOLDER$f
+    done
+fi
+

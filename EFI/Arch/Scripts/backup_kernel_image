@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -eu
+
+EFI_FOLDER=/efi/EFI/Arch
+BACKUP_FOLDER=/boot/efi_backup/$(date +%Y-%m-%d_%H.%M.%S)
+
+UNSIGNED_IMAGE=${EFI_FOLDER}/Arch.Unsigned.efi
+SIGNED_IMAGE=${EFI_FOLDER}/Arch.efi
+INITRAMFS=${EFI_FOLDER}/ucode-initramfs.img
+
+echo "==> Creating backup folder if necessary"
+mkdir -p ${BACKUP_FOLDER}
+
+echo "==> Copying EFI Images and initramfs"
+cp ${EFI_FOLDER}/ucode-initramfs.img ${EFI_FOLDER}/*.efi ${BACKUP_FOLDER}
+
